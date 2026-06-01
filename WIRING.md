@@ -68,6 +68,11 @@ on-board LDO; `EN` is reset (double-press within 3 s wipes WiFi — §9).
 
 ## 3. Full Schematic
 
+![Svazarm Button wiring schematic](wiring-schematic.svg)
+
+The colour-coded schematic above is the complete build in one picture. A
+text-only version follows for terminal/diff viewing:
+
 ```
    ╔═══════════════ 230 V AC SIDE — DANGEROUS ═══════════════╗
    ║                                                          ║

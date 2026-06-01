@@ -68,6 +68,11 @@ je reset (dvojí stisk do 3 s smaže WiFi — §9).
 
 ## 3. Celkové schéma
 
+![Schéma zapojení Svazarm Button](wiring-schematic.cs.svg)
+
+Barevné schéma výše je celá stavba v jednom obrázku. Níže je textová verze pro
+zobrazení v terminálu / v diffu:
+
 ```
    ╔═══════════════ STRANA 230 V AC — NEBEZPEČNÁ ════════════╗
    ║                                                          ║

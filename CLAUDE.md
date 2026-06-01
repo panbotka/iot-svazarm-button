@@ -7,8 +7,9 @@ header. The server (`keg-scale` backend, `POST /api/button/svazarm/open`)
 announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 
 ## Docs — IMPORTANT
-- The wiring guide exists in TWO languages: `WIRING.md` (English) and `WIRING.cs.md` (Czech).
-- **ALWAYS edit BOTH documents together** — any change to one must be mirrored in the other so they never drift out of sync.
+- The wiring guide exists in TWO languages: `WIRING.md` (English) and `WIRING.cs.md` (Czech), each embedding its own colour SVG schematic (`wiring-schematic.svg` / `wiring-schematic.cs.svg`).
+- **ALWAYS edit BOTH language versions together** — guide text AND the SVG schematic — so the English and Czech sets never drift out of sync.
+- The SVGs are hand-authored; preview with `chromium --headless --no-sandbox --screenshot=/tmp/w.png --window-size=1040,720 file://$PWD/wiring-schematic.svg` and check for overlaps.
 
 ## Hardware
 - ESP32 DevKitC (38pin), 3.3V logic
