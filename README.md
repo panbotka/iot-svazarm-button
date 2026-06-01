@@ -46,7 +46,7 @@ make monitor   # serial monitor @ 115200 baud
 
 ## Configuration
 
-Copy `src/config.example.h` to `src/config.h` and fill in:
+`src/config.example.h` → copy to `src/config.h` and fill in the **first-boot defaults**:
 
 - `API_URL` — the server endpoint (**secret host** — never committed)
 - `AUTH_TOKEN` — sent verbatim in the `Authorization` header
@@ -54,7 +54,39 @@ Copy `src/config.example.h` to `src/config.h` and fill in:
 
 `src/config.h` is gitignored so secrets stay out of the repo.
 
+These values are only **defaults**. WiFi, Backend URL, and Auth token can all be
+(re)configured at runtime through the config portal and are then stored in NVS,
+overriding the compiled-in defaults.
+
+### Config portal — WiFi setup
+
+When the ESP32 **can't connect to any known WiFi**, it starts its own access
+point and opens a configuration web page:
+
+1. The board creates a WiFi network named **`SvazarmButton-Setup`**.
+2. Connect to it with a phone/laptop — the captive portal pops up automatically (or open `http://192.168.4.1`).
+3. Pick your WiFi network, enter the password, and **Save**.
+4. The board stores the credentials in NVS and connects; next boot it connects automatically.
+5. If nothing is entered within 3 minutes, the board reboots and retries.
+
+### Config portal — changing Backend URL / Auth token
+
+The portal also has fields for **Backend URL** and **Auth token**. There are two
+ways to open it:
+
+**A) Hold the button at boot (keeps WiFi)** — best for editing just the URL/token:
+
+1. Hold the button down, then power on / reset the board. **Keep holding ~3 s** until the LED gives a double blink.
+2. Connect to the **`SvazarmButton-Setup`** network → open `http://192.168.4.1`.
+3. Go to the **Setup** page, edit **Backend URL** and/or **Auth token**, and **Save**.
+4. Click **Exit**. WiFi is untouched — the board reconnects with the stored credentials.
+
+**B) Double-reset (full re-config)** — wipes WiFi and reconfigures everything:
+
+1. Press the reset button **twice within 3 s**. This clears stored WiFi credentials.
+2. The portal opens; set WiFi **and** edit Backend URL / Auth token, then **Save**.
+
 ## Notes
 
-- Reset the board **twice within 3 s** to clear stored WiFi credentials and re-open the captive portal (`SvazarmButton-Setup`).
 - A short press lockout (3 s) prevents one press from firing multiple requests.
+- The portal pre-fills the current Backend URL / Auth token so you can tweak rather than retype.

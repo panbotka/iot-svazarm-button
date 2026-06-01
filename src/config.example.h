@@ -3,6 +3,9 @@
 
 // Copy this file to config.h and fill in the real values.
 // config.h is gitignored — never commit the real AuthToken or WiFi passwords.
+//
+// NOTE: API_URL and AUTH_TOKEN here are only first-boot DEFAULTS. Once set via
+// the config portal they are stored in NVS and take precedence over these.
 
 // --- Server endpoint ---
 // Real host is a secret — keep it only in config.h, never commit it.

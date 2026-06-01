@@ -6,6 +6,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include <vector>
 #include "config.h"
 
 // --- Pin definitions (ESP32 DevKitC 38-pin) ---
@@ -25,11 +26,20 @@
 #define LED_FAST_MS      200
 
 static const char* AP_NAME = "SvazarmButton-Setup";
-static const char* PREFS_NS = "wifi";
+static const char* PREFS_NS = "wifi";   // WiFi credentials namespace
+static const char* CFG_NS = "cfg";      // Backend URL + auth token namespace
 
 // --- Globals ---
 WiFiMulti wifiMulti;
 Preferences prefs;
+
+// Runtime config — loaded from NVS at boot, defaults from config.h.
+String g_apiUrl;
+String g_authToken;
+
+// Portal parameter handles — valid only while the config portal is running.
+WiFiManagerParameter* g_urlParam = nullptr;
+WiFiManagerParameter* g_tokenParam = nullptr;
 
 // ============================================================
 // LED status indication (external LED, active HIGH)
@@ -151,6 +161,32 @@ void clearCredentials() {
 }
 
 // ============================================================
+// Runtime config: Backend URL + Auth token (Preferences / NVS)
+// ============================================================
+
+void loadConfig() {
+  prefs.begin(CFG_NS, true);
+  g_apiUrl = prefs.getString("url", API_URL);       // default from config.h
+  g_authToken = prefs.getString("token", AUTH_TOKEN); // default from config.h
+  prefs.end();
+}
+
+void saveConfig(const char* url, const char* token) {
+  prefs.begin(CFG_NS, false);
+  prefs.putString("url", url);
+  prefs.putString("token", token);
+  prefs.end();
+  Serial.println("  Config (URL/token) saved to NVS");
+}
+
+// Invoked by WiFiManager when the parameters form is submitted.
+void saveParamsCallback() {
+  if (g_urlParam) g_apiUrl = g_urlParam->getValue();
+  if (g_tokenParam) g_authToken = g_tokenParam->getValue();
+  saveConfig(g_apiUrl.c_str(), g_authToken.c_str());
+}
+
+// ============================================================
 // Double Reset Detection (reset twice within 3s clears WiFi)
 // ============================================================
 
@@ -217,29 +253,68 @@ bool connectWiFi() {
   return false;
 }
 
-void startCaptivePortal() {
-  Serial.println("Starting captive portal...");
+// Opens the WiFiManager config portal with extra fields for Backend URL and
+// Auth token. keepWiFi=false (connection failure / double-reset) restarts the
+// board if the portal closes without a WiFi connection; keepWiFi=true (button
+// held at boot) just returns so the caller can reconnect with existing creds.
+void runConfigPortal(bool keepWiFi) {
+  Serial.println("Starting config portal...");
 
   WiFiManager wm;
   wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
-  ledSet(false);
 
+  WiFiManagerParameter urlParam("apiurl", "Backend URL", g_apiUrl.c_str(), 200);
+  WiFiManagerParameter tokenParam("token", "Auth token (Authorization header)",
+                                  g_authToken.c_str(), 200);
+  g_urlParam = &urlParam;
+  g_tokenParam = &tokenParam;
+  wm.addParameter(&urlParam);
+  wm.addParameter(&tokenParam);
+  wm.setSaveParamsCallback(saveParamsCallback);
+
+  // WiFi page, dedicated parameters page, info, and an Exit button so the
+  // portal can be closed after editing params without changing WiFi.
+  std::vector<const char*> menu = {"wifi", "param", "info", "exit"};
+  wm.setMenu(menu);
+
+  ledSet(false);
   wm.setAPCallback([](WiFiManager* /*wm*/) {
-    Serial.println("Captive portal active");
-    Serial.printf("Connect to AP: %s\n", AP_NAME);
+    Serial.println("Config portal active");
+    Serial.printf("Connect to AP: %s, then open http://192.168.4.1\n", AP_NAME);
   });
 
   bool connected = wm.startConfigPortal(AP_NAME);
 
   if (connected) {
+    // New WiFi credentials were entered — persist them in our multi-WiFi store.
     String ssid = WiFi.SSID();
     String pass = wm.getWiFiPass();
     Serial.printf("Portal connected to: %s\n", ssid.c_str());
     saveCredential(ssid.c_str(), pass.c_str());
-  } else {
-    Serial.println("Portal timed out — restarting...");
+  } else if (!keepWiFi) {
+    Serial.println("Portal closed without WiFi — restarting...");
     ESP.restart();
   }
+
+  g_urlParam = nullptr;
+  g_tokenParam = nullptr;
+}
+
+// Returns true if the button is held LOW for ~3s right after boot — used to
+// open the config portal on demand without losing WiFi.
+bool buttonHeldAtBoot() {
+  if (digitalRead(BUTTON_PIN) != LOW) return false;
+  Serial.println("Button down at boot — keep holding 3s for config portal...");
+  unsigned long start = millis();
+  while (digitalRead(BUTTON_PIN) == LOW) {
+    if (millis() - start >= 3000) {
+      Serial.println("Config portal requested");
+      ledBlinkTimes(2, SUCCESS_BLINK_MS);  // confirm request
+      return true;
+    }
+    delay(10);
+  }
+  return false;
 }
 
 // ============================================================
@@ -268,10 +343,10 @@ bool sendOpenRequest() {
   client.setInsecure();  // skip certificate verification
 
   HTTPClient http;
-  http.begin(client, API_URL);
+  http.begin(client, g_apiUrl);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setUserAgent(USER_AGENT);
-  http.addHeader("Authorization", AUTH_TOKEN);
+  http.addHeader("Authorization", g_authToken);
   http.addHeader("Content-Type", "application/json");
 
   // Body is ignored by the server today — send small debug info anyway.
@@ -286,7 +361,7 @@ bool sendOpenRequest() {
   http.end();
 
   bool ok = httpCode >= 200 && httpCode < 300;
-  Serial.printf("[%lu] POST %s -> %d (%s)\n", millis(), API_URL, httpCode,
+  Serial.printf("[%lu] POST %s -> %d (%s)\n", millis(), g_apiUrl.c_str(), httpCode,
                 ok ? "OK" : "FAIL");
   return ok;
 }
@@ -331,6 +406,18 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   ledSet(false);
 
+  loadConfig();
+  Serial.printf("Backend URL: %s\n", g_apiUrl.c_str());
+
+  // Hold the button during boot to open the config portal and edit the
+  // Backend URL / Auth token without wiping WiFi.
+  if (buttonHeldAtBoot()) {
+    runConfigPortal(true);   // keep WiFi creds; reconnect afterwards
+    connectWiFi();
+    ledBlinkTimes(1, SUCCESS_BLINK_MS);
+    return;
+  }
+
   bool doubleReset = checkDoubleReset();
 
   if (!doubleReset && connectWiFi()) {
@@ -339,7 +426,8 @@ void setup() {
     return;
   }
 
-  startCaptivePortal();
+  // Couldn't connect (or double-reset wiped creds) — open the full portal.
+  runConfigPortal(false);
 }
 
 void loop() {

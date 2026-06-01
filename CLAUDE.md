@@ -33,6 +33,17 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 - Body: ignored by the server today (firmware still sends small debug JSON)
 - Success: HTTP `204 No Content` (any 2xx is treated as success)
 
+## Runtime Config (NVS)
+- Backend URL + Auth token are stored in NVS namespace `cfg` (keys `url`, `token`).
+- `config.h` `API_URL` / `AUTH_TOKEN` are first-boot DEFAULTS only; NVS values override them.
+- `sendOpenRequest()` uses the runtime globals `g_apiUrl` / `g_authToken`, not the `#define`s.
+- Set via the WiFiManager config portal (custom `WiFiManagerParameter` fields, `param`/`exit` menu, `saveParamsCallback` persists to NVS).
+
+## Config Portal Triggers
+- **Button held ~3s at boot** (`buttonHeldAtBoot()`): opens portal with WiFi kept; edit URL/token only, then Exit; board reconnects.
+- **Connection failure**: portal opens automatically; restarts after 180s timeout.
+- **Double-reset** (2x within 3s): clears WiFi creds, opens full portal (WiFi + URL/token).
+
 ## Secrets — do NOT commit
 - `src/config.h` is gitignored. It holds the real `API_URL` host, `AUTH_TOKEN`, and WiFi passwords.
 - `src/config.example.h` is the committed template with placeholders only.
@@ -44,5 +55,4 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 - External LED (active HIGH): 10x blink = request accepted, 3 long blinks = error
 - WiFi kept connected in `loop()`; `sendOpenRequest()` reconnects best-effort before POSTing
 - Multi-WiFi: up to 20 networks in Preferences (NVS), WiFiMulti for auto-connect, WiFiManager captive portal as fallback
-- Double-reset detection clears stored WiFi credentials (reset twice within 3s)
 - Pattern mirrors the sibling `lampicka` project (same WiFi/NVS/DRD approach)

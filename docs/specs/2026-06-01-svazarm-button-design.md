@@ -41,6 +41,19 @@ Mirrors the sibling `lampicka` project's WiFi/NVS/double-reset patterns.
 5. Feedback on external LED: **10× blink** = accepted (2xx); **3 long blinks** = error (no WiFi / non-2xx).
 6. Double-reset (twice within 3 s) clears stored WiFi credentials.
 
+## Runtime Configuration
+
+Backend URL and Auth token are configurable at runtime via the WiFiManager
+portal (custom parameter fields), stored in NVS namespace `cfg`. The `config.h`
+values are first-boot defaults only; NVS overrides them. The firmware reads
+`g_apiUrl` / `g_authToken` at request time.
+
+Portal triggers:
+
+- **Button held ~3 s at boot** — opens the portal keeping WiFi; edit URL/token only, then Exit.
+- **Connection failure** — portal opens automatically (180 s timeout, then reboot).
+- **Double-reset** (twice within 3 s) — clears WiFi creds, opens full portal (WiFi + URL/token).
+
 ## Secrets
 
 - `src/config.h` (gitignored) holds the real `API_URL` host, `AUTH_TOKEN`, and WiFi passwords.
