@@ -6,6 +6,10 @@ ESP32 DevKitC with a physical button. On press it sends
 header. The server (`keg-scale` backend, `POST /api/button/svazarm/open`)
 announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 
+## Docs — IMPORTANT
+- The wiring guide exists in TWO languages: `WIRING.md` (English) and `WIRING.cs.md` (Czech).
+- **ALWAYS edit BOTH documents together** — any change to one must be mirrored in the other so they never drift out of sync.
+
 ## Hardware
 - ESP32 DevKitC (38pin), 3.3V logic
 - Momentary push button: GPIO27 -> GND (internal pull-up, active LOW)

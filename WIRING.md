@@ -1,5 +1,7 @@
 # Wiring Guide — Svazarm Button
 
+*(Česká verze: [WIRING.cs.md](WIRING.cs.md). Both documents must be kept in sync.)*
+
 A full build guide for the Svazarm Button hardware. The device is mains-powered
 through an **HLK-PM01** AC-DC module (230 V AC → 5 V DC) so it plugs straight into
 the wall with **no external power brick**.
