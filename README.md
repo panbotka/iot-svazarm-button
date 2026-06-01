@@ -21,7 +21,9 @@ The server side lives in the `keg-scale` backend (`POST /api/button/svazarm/open
 | [ESP32 DevKitC (38pin)](https://dratek.cz/arduino-platforma/51547-esp32-devkitc-development-board-38pin.html) | WiFi/BLE microcontroller, 3.3V logic |
 | Momentary push button | Between `GPIO27` and `GND` (internal pull-up, active LOW) |
 | External LED + resistor (~330Ω) | On `GPIO26` to `GND` (active HIGH) — press feedback |
-| USB / 5V supply | Powers the board |
+| [HLK-PM01](https://dratek.cz/arduino-platforma/176693-napajeci-zdroj-5vdc-600ma-3w-do-dps.html) | 230V AC → 5V DC PCB-mount PSU — powers the board straight from mains (no power brick) |
+
+> ☠️ This device contains **230 V mains voltage** (HLK-PM01 input). Only a qualified person should build/service the mains side, and it must live in a closed insulated enclosure. See **[WIRING.md](WIRING.md)**.
 
 ## Wiring
 

@@ -10,7 +10,7 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 - ESP32 DevKitC (38pin), 3.3V logic
 - Momentary push button: GPIO27 -> GND (internal pull-up, active LOW)
 - External LED + ~330Ω resistor: GPIO26 -> GND (active HIGH) for press feedback
-- Powered via USB / 5V
+- Powered from mains via an HLK-PM01 (230V AC -> 5V DC, isolated) into the 5V pin — no power brick. USB only for programming (never with mains connected). Contains lethal mains voltage; see WIRING.md.
 
 ## Firmware Stack
 - Arduino (C++) with arduino-cli + Makefile (not PlatformIO)

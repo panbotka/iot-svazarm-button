@@ -14,7 +14,7 @@ Svazarm has just opened.
 - **Board:** ESP32 DevKitC (38-pin), 3.3V logic
 - **Button:** momentary push button, `GPIO27` → `GND`, internal pull-up (active LOW)
 - **LED:** external LED + ~330Ω resistor on `GPIO26` → `GND` (active HIGH), press feedback
-- **Power:** USB / 5V
+- **Power:** mains via **HLK-PM01** (230V AC → 5V DC, isolated, PCB-mount) into the `5V` pin — no external power brick. USB used only for programming (never simultaneously with mains). The device therefore contains lethal mains voltage; see WIRING.md.
 
 ## Firmware Stack
 
