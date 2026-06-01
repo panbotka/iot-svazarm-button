@@ -14,7 +14,7 @@ Svazarm has just opened.
 - **Board:** ESP32 DevKitC (38-pin), 3.3V logic
 - **Button:** momentary push button, `GPIO27` → `GND`, internal pull-up (active LOW)
 - **LED:** external LED + ~330Ω resistor on `GPIO26` → `GND` (active HIGH), press feedback
-- **Power:** mains via **HLK-PM01** (230V AC → 5V DC, isolated, PCB-mount) into the `5V` pin — no external power brick. USB used only for programming (never simultaneously with mains). The device therefore contains lethal mains voltage; see WIRING.md.
+- **Power:** USB-C (5 V) — the board's USB-C port both powers and programs it. Low-voltage SELV device, no mains voltage. See WIRING.md.
 
 ## Firmware Stack
 
@@ -80,7 +80,7 @@ Portal triggers:
 
 ## Out of Scope (for now)
 
-- Deep sleep / battery operation (assumed mains/USB powered for instant response)
+- Deep sleep / battery operation (assumed USB-C powered for instant response)
 - Idle light-sleep with reconnect-on-press (considered, rejected to keep instant response)
 - OTA updates
 - Multiple buttons / multiple endpoints
