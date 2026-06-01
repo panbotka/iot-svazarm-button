@@ -90,6 +90,7 @@ the throttle). There are two ways to open it:
 
 ## Notes
 
+- The CPU runs **underclocked at 80 MHz** (down from 240) to reduce heat; 80 MHz is the lowest frequency that still keeps WiFi working. WiFi modem sleep is enabled, so the radio naps between beacons while staying connected — button response is unaffected.
 - A short press lockout (3 s) prevents one press from firing multiple requests; the **cooldown** (default 4 h) is the higher-level throttle that limits how often a request is actually sent.
 - Only **successful** sends start the cooldown — a failed request can be retried immediately.
 - The cooldown timer lives in RAM, so a reboot/power-cycle resets it (the next press sends right away).

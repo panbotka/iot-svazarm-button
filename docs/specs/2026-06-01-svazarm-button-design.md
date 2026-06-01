@@ -73,8 +73,14 @@ Portal triggers:
 - `panbotka/iot-svazarm-button`, private
 - License: WTFPL
 
+## Power
+
+- CPU underclocked to 80 MHz (from the 240 MHz default) to reduce heat. 80 MHz is the floor that keeps WiFi functional; lower frequencies disable the radio.
+- WiFi modem sleep enabled — the connection stays up while the radio naps between beacons, so button response remains instant.
+
 ## Out of Scope (for now)
 
 - Deep sleep / battery operation (assumed mains/USB powered for instant response)
+- Idle light-sleep with reconnect-on-press (considered, rejected to keep instant response)
 - OTA updates
 - Multiple buttons / multiple endpoints

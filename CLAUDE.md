@@ -55,6 +55,10 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 - `src/config.example.h` is the committed template with placeholders only.
 - The server host (`API_URL`) is itself secret — keep it out of all committed files (README, docs, examples).
 
+## Power
+- CPU underclocked to 80 MHz (`setCpuFrequencyMhz(CPU_FREQ_MHZ)` first thing in setup) to cut heat — 80 MHz is the floor that keeps WiFi working; below it the radio is disabled.
+- WiFi modem sleep enabled (`WiFi.setSleep(true)`): connection stays up, radio naps between beacons. Button response stays instant.
+
 ## Key Decisions
 - Button is active LOW with internal pull-up; debounced (~50ms), fires on confirmed press
 - 3s press lockout so one press sends exactly one request

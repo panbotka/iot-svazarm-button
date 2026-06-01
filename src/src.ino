@@ -14,6 +14,7 @@
 #define LED_PIN    26   // external LED via resistor to GND (active HIGH)
 
 // --- Constants ---
+#define CPU_FREQ_MHZ     80     // underclock from 240 to cut heat (WiFi needs >=80)
 #define MAX_NETWORKS     20
 #define WIFI_TIMEOUT_MS  15000
 #define PORTAL_TIMEOUT_S 180
@@ -423,13 +424,23 @@ bool buttonPressed() {
 // ============================================================
 
 void setup() {
+  // Underclock the CPU to reduce heat/power. 80 MHz is the floor that still
+  // lets the WiFi radio work (anything lower disables WiFi). Set before
+  // Serial.begin so the UART divisor is computed against the final clock.
+  setCpuFrequencyMhz(CPU_FREQ_MHZ);
+
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== Svazarm Button starting ===");
+  Serial.printf("CPU frequency: %d MHz\n", getCpuFrequencyMhz());
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   ledSet(false);
+
+  // WiFi modem sleep: keep the connection but let the radio nap between
+  // beacons. Cuts idle power without affecting button responsiveness.
+  WiFi.setSleep(true);
 
   loadConfig();
   Serial.printf("Backend URL: %s\n", g_apiUrl.c_str());
