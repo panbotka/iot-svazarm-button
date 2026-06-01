@@ -34,10 +34,16 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 - Success: HTTP `204 No Content` (any 2xx is treated as success)
 
 ## Runtime Config (NVS)
-- Backend URL + Auth token are stored in NVS namespace `cfg` (keys `url`, `token`).
-- `config.h` `API_URL` / `AUTH_TOKEN` are first-boot DEFAULTS only; NVS values override them.
-- `sendOpenRequest()` uses the runtime globals `g_apiUrl` / `g_authToken`, not the `#define`s.
+- Backend URL + Auth token + cooldown are stored in NVS namespace `cfg` (keys `url`, `token`, `cooldown` seconds).
+- `config.h` `API_URL` / `AUTH_TOKEN` / `OPEN_COOLDOWN_S` are first-boot DEFAULTS only; NVS values override them.
+- `sendOpenRequest()` uses the runtime globals `g_apiUrl` / `g_authToken`; the throttle uses `g_cooldownMs`.
 - Set via the WiFiManager config portal (custom `WiFiManagerParameter` fields, `param`/`exit` menu, `saveParamsCallback` persists to NVS).
+
+## Send Throttle (cooldown)
+- A press sends the POST only if `millis() - lastSendMs >= g_cooldownMs`; otherwise it's ignored with a quick double blink.
+- Default `OPEN_COOLDOWN_S` = 14400 (4h). `0` disables the throttle.
+- Only **successful** sends update `lastSendMs` / `hasSent` (failures can retry immediately).
+- Throttle state is RAM-only (`lastSendMs`, `hasSent`) — resets on reboot; no RTC/persisted wall clock.
 
 ## Config Portal Triggers
 - **Button held ~3s at boot** (`buttonHeldAtBoot()`): opens portal with WiFi kept; edit URL/token only, then Exit; board reconnects.

@@ -43,10 +43,18 @@ Mirrors the sibling `lampicka` project's WiFi/NVS/double-reset patterns.
 
 ## Runtime Configuration
 
-Backend URL and Auth token are configurable at runtime via the WiFiManager
-portal (custom parameter fields), stored in NVS namespace `cfg`. The `config.h`
-values are first-boot defaults only; NVS overrides them. The firmware reads
-`g_apiUrl` / `g_authToken` at request time.
+Backend URL, Auth token, and the send cooldown are configurable at runtime via
+the WiFiManager portal (custom parameter fields), stored in NVS namespace `cfg`.
+The `config.h` values are first-boot defaults only; NVS overrides them. The
+firmware reads `g_apiUrl` / `g_authToken` at request time and `g_cooldownMs` for
+the throttle.
+
+### Send throttle (cooldown)
+
+- A button press sends the POST only if at least the cooldown has elapsed since the last **successful** send; otherwise the press is ignored (quick double blink).
+- Default `OPEN_COOLDOWN_S` = 14400 s (4 h); `0` disables the throttle.
+- Failed sends do not start the cooldown, so they can be retried immediately.
+- The throttle state is held in RAM (`lastSendMs`, `hasSent`) and resets on reboot — there is no RTC, so wall-clock persistence is out of scope.
 
 Portal triggers:
 

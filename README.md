@@ -10,6 +10,7 @@ group that the pub at Svazarm has just opened.
 2. On button press (debounced), it sends `POST` to the configured `API_URL`
 3. The request carries an `Authorization` header (exact-match token, no `Bearer` prefix); the JSON body is small debug info and is ignored by the server
 4. On a `2xx` response the external LED blinks **10×** (request accepted); on failure it shows an error pattern (3 long blinks)
+5. A configurable **cooldown** (default 4 hours) throttles sends: a press within the cooldown window is ignored (quick double blink) so the request goes out at most once per period
 
 The server side lives in the `keg-scale` backend (`POST /api/button/svazarm/open`).
 
@@ -69,16 +70,17 @@ point and opens a configuration web page:
 4. The board stores the credentials in NVS and connects; next boot it connects automatically.
 5. If nothing is entered within 3 minutes, the board reboots and retries.
 
-### Config portal — changing Backend URL / Auth token
+### Config portal — changing Backend URL / Auth token / cooldown
 
-The portal also has fields for **Backend URL** and **Auth token**. There are two
-ways to open it:
+The portal also has fields for **Backend URL**, **Auth token**, and **Min seconds
+between sends** (the cooldown, in seconds — default `14400` = 4 hours, `0` disables
+the throttle). There are two ways to open it:
 
 **A) Hold the button at boot (keeps WiFi)** — best for editing just the URL/token:
 
 1. Hold the button down, then power on / reset the board. **Keep holding ~3 s** until the LED gives a double blink.
 2. Connect to the **`SvazarmButton-Setup`** network → open `http://192.168.4.1`.
-3. Go to the **Setup** page, edit **Backend URL** and/or **Auth token**, and **Save**.
+3. Go to the **Setup** page, edit **Backend URL**, **Auth token**, and/or **Min seconds between sends**, then **Save**.
 4. Click **Exit**. WiFi is untouched — the board reconnects with the stored credentials.
 
 **B) Double-reset (full re-config)** — wipes WiFi and reconfigures everything:
@@ -88,5 +90,7 @@ ways to open it:
 
 ## Notes
 
-- A short press lockout (3 s) prevents one press from firing multiple requests.
-- The portal pre-fills the current Backend URL / Auth token so you can tweak rather than retype.
+- A short press lockout (3 s) prevents one press from firing multiple requests; the **cooldown** (default 4 h) is the higher-level throttle that limits how often a request is actually sent.
+- Only **successful** sends start the cooldown — a failed request can be retried immediately.
+- The cooldown timer lives in RAM, so a reboot/power-cycle resets it (the next press sends right away).
+- The portal pre-fills the current Backend URL / Auth token / cooldown so you can tweak rather than retype.

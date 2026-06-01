@@ -36,10 +36,16 @@ Preferences prefs;
 // Runtime config — loaded from NVS at boot, defaults from config.h.
 String g_apiUrl;
 String g_authToken;
+unsigned long g_cooldownMs = 0;   // min interval between sends, in ms
+
+// Send throttle state (RAM only — resets on reboot).
+unsigned long lastSendMs = 0;     // millis() of last successful send
+bool hasSent = false;             // a send has succeeded since boot
 
 // Portal parameter handles — valid only while the config portal is running.
 WiFiManagerParameter* g_urlParam = nullptr;
 WiFiManagerParameter* g_tokenParam = nullptr;
+WiFiManagerParameter* g_cooldownParam = nullptr;
 
 // ============================================================
 // LED status indication (external LED, active HIGH)
@@ -166,24 +172,35 @@ void clearCredentials() {
 
 void loadConfig() {
   prefs.begin(CFG_NS, true);
-  g_apiUrl = prefs.getString("url", API_URL);       // default from config.h
-  g_authToken = prefs.getString("token", AUTH_TOKEN); // default from config.h
+  g_apiUrl = prefs.getString("url", API_URL);          // default from config.h
+  g_authToken = prefs.getString("token", AUTH_TOKEN);  // default from config.h
+  g_cooldownMs = (unsigned long)prefs.getULong("cooldown", OPEN_COOLDOWN_S) * 1000UL;
   prefs.end();
 }
 
-void saveConfig(const char* url, const char* token) {
+void saveConfig(const char* url, const char* token, unsigned long cooldownS) {
   prefs.begin(CFG_NS, false);
   prefs.putString("url", url);
   prefs.putString("token", token);
+  prefs.putULong("cooldown", cooldownS);
   prefs.end();
-  Serial.println("  Config (URL/token) saved to NVS");
+  Serial.println("  Config (URL/token/cooldown) saved to NVS");
 }
 
 // Invoked by WiFiManager when the parameters form is submitted.
 void saveParamsCallback() {
   if (g_urlParam) g_apiUrl = g_urlParam->getValue();
   if (g_tokenParam) g_authToken = g_tokenParam->getValue();
-  saveConfig(g_apiUrl.c_str(), g_authToken.c_str());
+
+  unsigned long cooldownS = g_cooldownMs / 1000UL;
+  if (g_cooldownParam) {
+    const char* v = g_cooldownParam->getValue();
+    if (v && v[0] != '\0') {                 // keep current value if left blank
+      cooldownS = strtoul(v, nullptr, 10);
+      g_cooldownMs = cooldownS * 1000UL;
+    }
+  }
+  saveConfig(g_apiUrl.c_str(), g_authToken.c_str(), cooldownS);
 }
 
 // ============================================================
@@ -263,13 +280,20 @@ void runConfigPortal(bool keepWiFi) {
   WiFiManager wm;
   wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
 
+  char cooldownStr[16];
+  snprintf(cooldownStr, sizeof(cooldownStr), "%lu", g_cooldownMs / 1000UL);
+
   WiFiManagerParameter urlParam("apiurl", "Backend URL", g_apiUrl.c_str(), 200);
   WiFiManagerParameter tokenParam("token", "Auth token (Authorization header)",
                                   g_authToken.c_str(), 200);
+  WiFiManagerParameter cooldownParam("cooldown", "Min seconds between sends",
+                                     cooldownStr, 12);
   g_urlParam = &urlParam;
   g_tokenParam = &tokenParam;
+  g_cooldownParam = &cooldownParam;
   wm.addParameter(&urlParam);
   wm.addParameter(&tokenParam);
+  wm.addParameter(&cooldownParam);
   wm.setSaveParamsCallback(saveParamsCallback);
 
   // WiFi page, dedicated parameters page, info, and an Exit button so the
@@ -298,6 +322,7 @@ void runConfigPortal(bool keepWiFi) {
 
   g_urlParam = nullptr;
   g_tokenParam = nullptr;
+  g_cooldownParam = nullptr;
 }
 
 // Returns true if the button is held LOW for ~3s right after boot — used to
@@ -321,7 +346,7 @@ bool buttonHeldAtBoot() {
 // Open request (POST to the pub server)
 // ============================================================
 
-// Ensures WiFi is up (best effort), then POSTs to API_URL with the auth header.
+// Ensures WiFi is up (best effort), then POSTs to g_apiUrl with the auth header.
 // Returns true on a 2xx response.
 bool sendOpenRequest() {
   if (WiFi.status() != WL_CONNECTED) {
@@ -437,14 +462,23 @@ void loop() {
   }
 
   if (buttonPressed()) {
-    Serial.printf("[%lu] Button pressed — sending open request\n", millis());
-    ledSet(true);  // solid while the request is in flight
-    bool ok = sendOpenRequest();
-    ledSet(false);
-    if (ok) {
-      ledBlinkTimes(SUCCESS_BLINKS, SUCCESS_BLINK_MS);
+    if (hasSent && (millis() - lastSendMs) < g_cooldownMs) {
+      unsigned long remainingS = (g_cooldownMs - (millis() - lastSendMs)) / 1000UL;
+      Serial.printf("[%lu] Button pressed but in cooldown (%lus left) — ignored\n",
+                    millis(), remainingS);
+      ledBlinkTimes(2, 80);  // quick double blink = ignored / cooling down
     } else {
-      ledErrorPattern();
+      Serial.printf("[%lu] Button pressed — sending open request\n", millis());
+      ledSet(true);  // solid while the request is in flight
+      bool ok = sendOpenRequest();
+      ledSet(false);
+      if (ok) {
+        lastSendMs = millis();   // start cooldown only on success
+        hasSent = true;
+        ledBlinkTimes(SUCCESS_BLINKS, SUCCESS_BLINK_MS);
+      } else {
+        ledErrorPattern();
+      }
     }
   }
 

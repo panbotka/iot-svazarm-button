@@ -17,6 +17,9 @@
 // backend config (AuthToken).
 #define AUTH_TOKEN  "REPLACE_WITH_REAL_TOKEN"
 
+// Minimum seconds between sent requests (throttle). Default 4 hours. 0 = no throttle.
+#define OPEN_COOLDOWN_S 14400
+
 // --- Default WiFi networks (loaded on first boot when NVS is empty) ---
 struct WiFiCredential {
   const char* ssid;
