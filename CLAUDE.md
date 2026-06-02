@@ -67,7 +67,7 @@ announces in the guests' WhatsApp group that the pub at Svazarm just opened.
 ## Key Decisions
 - Button is active LOW with internal pull-up; debounced (~50ms), fires on confirmed press
 - 3s press lockout so one press sends exactly one request
-- External LED (active HIGH): 10x blink = request accepted, 3 long blinks = error
+- External LED (active HIGH): 3 short blinks = setup done / ready (`ledReady()`), 10x blink = request accepted, 3 long blinks = error, 2 quick blinks = ignored (cooldown)
 - WiFi kept connected in `loop()`; `sendOpenRequest()` reconnects best-effort before POSTing
 - Multi-WiFi: up to 20 networks in Preferences (NVS), WiFiMulti for auto-connect, WiFiManager captive portal as fallback
 - Pattern mirrors the sibling `lampicka` project (same WiFi/NVS/DRD approach)

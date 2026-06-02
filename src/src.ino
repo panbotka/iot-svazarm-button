@@ -87,6 +87,13 @@ void ledErrorPattern() {
   }
 }
 
+// Ready feedback: 3 short blinks — setup finished and loop() is now listening
+// for presses. Distinct from the 2x (cooldown / portal confirm) and 10x
+// (successful send) patterns.
+void ledReady() {
+  ledBlinkTimes(3, SUCCESS_BLINK_MS);
+}
+
 // Non-blocking blink (used while connecting to WiFi).
 void ledBlinkOnce(unsigned long intervalMs) {
   static unsigned long lastToggle = 0;
@@ -450,20 +457,23 @@ void setup() {
   if (buttonHeldAtBoot()) {
     runConfigPortal(true);   // keep WiFi creds; reconnect afterwards
     connectWiFi();
-    ledBlinkTimes(1, SUCCESS_BLINK_MS);
+    ledReady();
     return;
   }
 
   bool doubleReset = checkDoubleReset();
 
   if (!doubleReset && connectWiFi()) {
-    // Connected — signal readiness with one short blink.
-    ledBlinkTimes(1, SUCCESS_BLINK_MS);
+    // Connected — signal readiness.
+    ledReady();
     return;
   }
 
   // Couldn't connect (or double-reset wiped creds) — open the full portal.
+  // It restarts the board if no WiFi was set, so reaching past it means we're
+  // connected and ready.
   runConfigPortal(false);
+  ledReady();
 }
 
 void loop() {

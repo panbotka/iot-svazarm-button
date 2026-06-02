@@ -6,7 +6,7 @@ group that the pub at Svazarm has just opened.
 
 ## How It Works
 
-1. ESP32 connects to WiFi (configured via [WiFiManager](https://github.com/tzapu/WiFiManager) captive portal, with default networks from `config.h`)
+1. ESP32 connects to WiFi (configured via [WiFiManager](https://github.com/tzapu/WiFiManager) captive portal, with default networks from `config.h`); once setup finishes and it's ready, the external LED gives **3 short blinks**
 2. On button press (debounced), it sends `POST` to the configured `API_URL`
 3. The request carries an `Authorization` header (exact-match token, no `Bearer` prefix); the JSON body is small debug info and is ignored by the server
 4. On a `2xx` response the external LED blinks **10×** (request accepted); on failure it shows an error pattern (3 long blinks)
